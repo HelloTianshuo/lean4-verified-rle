@@ -1,0 +1,6 @@
+name = "VerifiedRLE"
+version = "0.1.0"
+defaultTargets = ["VerifiedRLE"]
+
+[[lean_lib]]
+name = "VerifiedRLE"
