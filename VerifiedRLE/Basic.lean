@@ -145,10 +145,16 @@ theorem encode_replicate_append
       simp [encode, ih]
 
 
+
+/--
+Canonical representation of RLE:
+For any valid encoded input, decoding and then encoding
+reconstructs the original RLE representation.
+-/
 theorem en_decode_canonical {input : List Run}
     (hvalid : validRLE input = true) :
     encode (decode input) = input := by
-  induction input generalizing hvalid with
+  induction input with
   | nil =>
       rfl
 
@@ -156,14 +162,13 @@ theorem en_decode_canonical {input : List Run}
       cases head with
       | mk count value =>
           cases tail with
-
           | nil =>
-            cases count with
-            | zero =>
-              simp [validRLE] at hvalid
-            | succ n =>
-              simpa [decode] using
-                (encode_replicate_succ n value)
+              cases count with
+              | zero =>
+                  simp [validRLE] at hvalid
+              | succ n =>
+                  simpa [decode] using
+                    (encode_replicate_succ n value)
 
           | cons nextRun rest =>
               cases nextRun with
@@ -186,4 +191,41 @@ theorem en_decode_canonical {input : List Run}
                   have hne : value ≠ nextValue := by
                     simpa using hparts.1.2
 
-                  sorry
+                  cases count with
+                  | zero =>
+                      simp at hcount
+
+                  | succ n =>
+                      simpa only [decode] using
+                        (encode_replicate_append
+                          n value
+                          (decode ((nextCount, nextValue) :: rest))
+                          nextCount nextValue rest
+                          htail_encode hne)
+
+
+/--
+Run validity:
+Encoding a list of natural numbers always produces
+a valid RLE representation.
+-/
+theorem encode_valid (xs : List Nat) :
+    validRLE (encode xs) = true := by
+  induction xs with
+  | nil =>
+      rfl
+  | cons x xs ih =>
+    cases h : encode xs with
+    | nil =>
+      simp [encode, h, validRLE]
+    | cons run rest =>
+      cases run with
+      | mk count value =>
+        by_cases heq : x = value
+        · cases rest with
+          | nil => simp [encode, h, heq, validRLE]
+          | cons nextRun rest =>
+            cases nextRun with
+            | mk nextCount nextValue =>
+              simp_all [encode, validRLE]
+        · simp_all [encode, validRLE]
